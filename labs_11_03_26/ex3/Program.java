@@ -21,7 +21,7 @@ public class Program {
             try {
                 n = Integer.parseInt(args[i]);
             } catch (NumberFormatException ex) {
-                System.out.println(args[i] + " nie jest liczba calkowita");
+                System.out.println(args[i] + " not an integer");
             }
             System.out.println(n + " - " + div(n));
         }
