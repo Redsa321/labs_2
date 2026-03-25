@@ -9,12 +9,10 @@ public class PrimeNumbers {
 
         boolean[] isSieve = new boolean[n + 1];
 
-        // Set all values to be prime numbers
         for (int i = 2; i <= n; i++) {
             isSieve[i] = true;
         }
 
-        // Sieve algorithm
         for (int i = 2; i * i <= n; i++) {
             if (isSieve[i]) {
                 for (int j = i * i; j <= n; j += i) {

@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 
     try {
       std::cout << m << " - " << primeNumbers.getNumber(m) << std::endl;
-    } catch (const std::out_of_range &e) {
+    } catch (std::out_of_range &e) {
       std::cout << m << " - " << e.what() << std::endl;
     }
   }

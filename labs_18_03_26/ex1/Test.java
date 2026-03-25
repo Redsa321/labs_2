@@ -5,7 +5,6 @@ public class Test {
             return;
         }
 
-        // Parse first argument - upper bound n
         int n;
         try {
             n = Integer.parseInt(args[0]);
@@ -21,7 +20,6 @@ public class Test {
 
         PrimeNumbers primeNumbers = new PrimeNumbers(n);
 
-        // Process remaining arguments
         for (int i = 1; i < args.length; i++) {
             int m;
             try {
