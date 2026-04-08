@@ -9,6 +9,6 @@ private:
   void generateRow(int n);
 
 public:
-  explicit PascalTriangleRow(int n);
+  PascalTriangleRow(int n);
   int getElement(int m);
 };
