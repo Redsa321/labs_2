@@ -1,6 +1,5 @@
 package labs_26_04_18.ex1;
 
-// Klasa dla Kwadratu
 public class Square extends Quadrangle {
     private final double side;
 

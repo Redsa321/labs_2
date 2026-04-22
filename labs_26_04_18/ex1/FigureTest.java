@@ -15,25 +15,37 @@ public class FigureTest {
                 i++;
 
                 switch (type) {
-                    case "c": // koło (circle)
-                        double radius = Double.parseDouble(args[i++]);
-                        figures.add(new Circle(radius));
+                    case "c": // koło
+                        figures.add(new Circle(Double.parseDouble(args[i++])));
                         break;
-                    case "p": // pięciokąt (pentagon)
-                        double pSide = Double.parseDouble(args[i++]);
-                        figures.add(new Pentagon(pSide));
+                    case "p": // pieciokąt
+                        figures.add(new Pentagon(Double.parseDouble(args[i++])));
                         break;
-                    case "h": // sześciokąt (hexagon)
-                        double hSide = Double.parseDouble(args[i++]);
-                        figures.add(new Hexagon(hSide));
+                    case "h": // szesciokąt
+                        figures.add(new Hexagon(Double.parseDouble(args[i++])));
                         break;
-                    case "q": // czworokąt (quadrangle)
-                        double s1 = Double.parseDouble(args[i++]);
-                        double s2 = Double.parseDouble(args[i++]);
-                        double s3 = Double.parseDouble(args[i++]);
-                        double s4 = Double.parseDouble(args[i++]);
-                        double angle = Double.parseDouble(args[i++]);
-                        figures.add(Quadrangle.create(s1, s2, s3, s4, angle));
+                    case "q": // czworokąt (2 lub 5 parametrów)
+                        List<Double> qArgs = new ArrayList<>();
+
+                        // Pobiera parametry, dopoki nie natrafi na litere
+                        while (i < args.length && !args[i].matches("[a-zA-Z]+")) {
+                            qArgs.add(Double.parseDouble(args[i++]));
+                        }
+
+                        if (qArgs.size() == 5) {
+                            // Pełny zapis
+                            figures.add(Quadrangle.create(
+                                    qArgs.get(0), qArgs.get(1), qArgs.get(2), qArgs.get(3), qArgs.get(4)));
+                        } else if (qArgs.size() == 2) {
+                            // Skrocony zapis dla
+                            double side = qArgs.get(0);
+                            double angle = qArgs.get(1);
+                            figures.add(Quadrangle.create(side, side, side, side, angle));
+                        } else {
+                            throw new IllegalArgumentException(
+                                    "Oczekiwano 2 (bok, kąt) lub 5 (4 boki, kąt) parametrów dla 'q'. Podano: "
+                                            + qArgs.size());
+                        }
                         break;
                     default:
                         throw new IllegalArgumentException("Nieznany typ figury: " + type);
@@ -51,7 +63,7 @@ public class FigureTest {
         }
 
         // Wypisywanie informacji o figurach
-        System.out.println("--- Zestawienie figur ---");
+        System.out.println("\tZestawienie figur");
         for (Figure fig : figures) {
             System.out.printf("Figura: %-20s | Obwód: %-8.2f | Pole: %-8.2f%n",
                     fig.getName(), fig.calculatePerimeter(), fig.calculateArea());
