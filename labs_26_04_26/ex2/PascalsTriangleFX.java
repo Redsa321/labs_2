@@ -15,7 +15,6 @@ public class PascalsTriangleFX extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        // --- TOP PANEL (Input area) ---
         Label label = new Label("Enter triangle size (number of rows):");
         label.setFont(Font.font("Arial", FontWeight.BOLD, 14));
 
@@ -25,53 +24,42 @@ public class PascalsTriangleFX extends Application {
 
         Button generateButton = new Button("Generate");
         generateButton.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-        // W JavaFX często używa się stylów CSS do kolorowania komponentów
         generateButton.setStyle("-fx-background-color: #4682B4; -fx-text-fill: white; -fx-cursor: hand;");
 
-        // HBox to poziomy kontener, odpowiednik prostego JPanelu z FlowLayout
         HBox topBox = new HBox(10, label, inputField, generateButton);
         topBox.setAlignment(Pos.CENTER_LEFT);
         topBox.setPadding(new Insets(10));
-        topBox.setStyle("-fx-background-color: #F0F8FF;"); // Alice Blue
+        topBox.setStyle("-fx-background-color: #F0F8FF;");
 
-        // --- CENTER PANEL (Display area) ---
         displayArea = new TextArea();
         displayArea.setEditable(false);
-        // Czcionka o stałej szerokości (Monospaced) jest kluczowa dla formatowania
         displayArea.setFont(Font.font("Monospaced", FontWeight.BOLD, 14));
         displayArea.setStyle("-fx-control-inner-background: #FFFAF0; -fx-text-fill: #191970;");
         displayArea.setPrefRowCount(20);
         displayArea.setPrefColumnCount(50);
 
-        // BorderPane to odpowiednik BorderLayout ze Swinga
         BorderPane root = new BorderPane();
         root.setTop(topBox);
         root.setCenter(displayArea);
 
-        // --- MAIN WINDOW CONFIGURATION ---
         Scene scene = new Scene(root);
         primaryStage.setTitle("Pascal's Triangle Generator (JavaFX)");
         primaryStage.setScene(scene);
 
-        // sizeToScene() działa podobnie do pack() w Swing - dopasowuje okno do
-        // zawartości
         primaryStage.sizeToScene();
         primaryStage.centerOnScreen();
         primaryStage.show();
 
-        // --- EVENT HANDLING ---
         generateButton.setOnAction(e -> generateAndDisplayTriangle());
     }
 
     private void generateAndDisplayTriangle() {
-        displayArea.clear(); // Czyszczenie obszaru tekstowego
+        displayArea.clear();
         String input = inputField.getText().trim();
 
         try {
-            // 1. Próba parsowania
             int size = Integer.parseInt(input);
 
-            // 2. Walidacja
             if (size <= 0) {
                 throw new IllegalArgumentException("Triangle size must be a number greater than zero.");
             }
@@ -79,7 +67,6 @@ public class PascalsTriangleFX extends Application {
                 throw new IllegalArgumentException("For readability, the maximum size is 30 rows.");
             }
 
-            // 3. Generowanie trójkąta
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < size; i++) {
                 for (int j = 0; j < size - i; j++) {
@@ -105,17 +92,15 @@ public class PascalsTriangleFX extends Application {
         }
     }
 
-    // Metoda pomocnicza do wyświetlania okienek dialogowych (odpowiednik
-    // JOptionPane)
     private void showAlert(Alert.AlertType type, String title, String content) {
         Alert alert = new Alert(type);
         alert.setTitle(title);
-        alert.setHeaderText(null); // Ukrywa domyślny, duży nagłówek
+        alert.setHeaderText(null);
         alert.setContentText(content);
         alert.showAndWait();
     }
 
     public static void main(String[] args) {
-        launch(args); // Uruchomienie aplikacji JavaFX
+        launch(args);
     }
 }
