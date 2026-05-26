@@ -40,6 +40,7 @@ public class PascalsTriangle extends JFrame {
         // display
         displayArea = new JTextArea(40, 80);
         displayArea.setEditable(false);
+
         // monospaced font to show triangle properly
         displayArea.setFont(new Font("Monospaced", Font.BOLD, 14));
         displayArea.setBackground(new Color(255, 250, 240));
