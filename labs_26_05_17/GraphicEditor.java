@@ -14,20 +14,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Główna klasa aplikacji.
+ * Główna klasa aplikacji – prosty edytor figur geometrycznych.
  *
- * Użytkownik może rysować trzy rodzaje figur: okrąg, prostokąt i wielokąt
- * dowolny (np. trójkąt). Każdą narysowaną figurę można później zaznaczać,
- * przesuwać, skalować kółkiem myszy, obracać (Shift + scroll) oraz zmieniać
- * jej kolor przez prawy przycisk myszy. Stan wszystkich figur (pozycja, kolor,
- * skala, obrót) można zapisać do pliku binarnego i wczytać go przy kolejnym
- * uruchomieniu.
+ * Użytkownik może rysować okręgi, prostokąty i wielokąty, a następnie je
+ * przesuwać, skalować scrollem, obracać (Shift + scroll) i zmieniać kolor
+ * prawym klikiem myszy. Stan figur można zapisać do pliku binarnego
+ * i wczytać przy kolejnym uruchomieniu.
  *
- * Klasa rozszerza {@link Application}, co jest wymagane przez framework JavaFX
- * 
- * punkt wejścia do aplikacji to metoda {@link #start(Stage)}, a nie main().
- * Metoda main() wywołuje tylko {@code launch()}, które wewnętrznie tworzy
- * instancję tej klasy i wywołuje start().
+ * Klasa rozszerza {@link Application} zgodnie z wymogiem JavaFX.
+ * Punkt wejścia to {@link #start(Stage)}, a nie main() – ta tylko wywołuje launch().
  *
  * @author Serhii Onopriienko
  * @version 1.0
@@ -35,101 +30,65 @@ import java.util.List;
 public class GraphicEditor extends Application {
 
     /**
-     * Wyliczenie dostępnych trybów pracy edytora.
+     * Tryby pracy edytora.
      *
-     * Tryb jest przechowywany w polu {@link #currentTool} i decyduje o tym,
-     * co dzieje się po kliknięciu na obszar rysowania:
-     * <ul>
-     * <li>{@code CIRCLE} - rysowanie okręgu przez przeciągnięcie myszy</li>
-     * <li>{@code RECTANGLE} - rysowanie prostokąta przez przeciągnięcie myszy</li>
-     * <li>{@code POLYGON} - rysowanie wielokąta punkt po punkcie (kliknięcia)</li>
-     * <li>{@code SELECT} - zaznaczanie i edycja istniejących figur</li>
-     * </ul>
-     *
-     * Po narysowaniu figury aplikacja automatycznie wraca do trybu SELECT,
-     * żeby użytkownik mógł od razu manipulować nowo dodaną figurą.
+     * Aktywny tryb decyduje o tym, co się dzieje po kliknięciu na panelu.
+     * Po narysowaniu figury aplikacja automatycznie wraca do SELECT.
      */
     public enum Tool {
-        CIRCLE, RECTANGLE, POLYGON, SELECT
+        /** Rysowanie okręgu przez przeciągnięcie myszy. */
+        CIRCLE,
+        /** Rysowanie prostokąta przez przeciągnięcie myszy. */
+        RECTANGLE,
+        /** Rysowanie wielokąta kliknięciami; zamknięcie przez klik blisko pierwszego wierzchołka. */
+        POLYGON,
+        /** Zaznaczanie i edycja istniejących figur. */
+        SELECT
     }
 
-    /** Aktualnie aktywne narzędzie. Domyślnie SELECT - tryb edycji. */
+    /** Aktualnie aktywny tryb edytora. */
     private Tool currentTool = Tool.SELECT;
 
-    /**
-     * Główny panel rysowania, na którym umieszczane są wszystkie figury.
-     * Używamy {@link javafx.scene.layout.Pane}, bo każda
-     * figura jest osobnym węzłem sceny - dzięki temu możemy łatwo reagować
-     * na kliknięcia konkretnie w daną figurę i modyfikować jej właściwości.
-     */
+    /** Panel rysowania – wszystkie figury są jego bezpośrednimi dziećmi. */
     private Pane drawPane;
 
     /**
-     * Referencja do aktualnie zaznaczonej figury.
-     * Null oznacza brak zaznaczenia. Zaznaczona figura jest wyróżniona
-     * czerwonym obrysem o grubości 3px (patrz: {@link #makeActive}).
+     * Aktualnie zaznaczona figura, null jeśli nic nie jest zaznaczone.
+     * Zaznaczona figura ma czerwony obrys 3px (patrz: {@link #makeActive}).
      */
     private Shape activeShape = null;
 
-    /**
-     * Współrzędne punktu, w którym użytkownik zaczął przeciągać mysz
-     * podczas rysowania okręgu lub prostokąta. Potrzebne w onMouseDragged,
-     * żeby wyliczyć aktualny rozmiar figury odnośnie do punktu startowego.
-     */
+    /** Punkt startowy przeciągania przy rysowaniu okręgu lub prostokąta. */
     private double startX, startY;
 
-    /**
-     * Referencja do figury w trakcie rysowania (zanim użytkownik puści przycisk
-     * myszy lub zamknie wielokąt). Figura jest już dodana do drawPane i
-     * aktualizowana na bieżąco podczas przeciągania. Po zakończeniu rysowania
-     * pole jest zerowane do null.
-     */
+    /** Figura w trakcie rysowania, dodana do panelu zanim użytkownik puści przycisk myszy. */
     private Shape previewShape;
 
-    /**
-     * Menu kontekstowe wywoływane prawym klikiem na zaznaczoną figurę.
-     * Zawiera tylko jeden element: {@link #colorPicker}.
-     */
+    /** Menu kontekstowe z ColorPickerem, wywoływane prawym klikiem na figurze. */
     private ContextMenu contextMenu;
 
-    /**
-     * Kontrolka wyboru koloru, osadzona wewnątrz {@link #contextMenu}.
-     * Po zmianie koloru przez użytkownika, nowy kolor jest od razu aplikowany
-     * do aktualnie zaznaczonej figury ({@link #activeShape}).
-     */
+    /** ColorPicker osadzony w {@link #contextMenu}. */
     private ColorPicker colorPicker;
 
     /**
-     * Tymczasowe znaczniki wizualne wyświetlane podczas rysowania wielokąta.
-     * Każde kliknięcie dodaje jeden znacznik: okrągły (czarny krąg r=5) dla
-     * pierwszego wierzchołka, kwadratowy (6x6 px) dla kolejnych. Dzięki temu
-     * użytkownik widzi, gdzie już kliknął. Lista jest czyszczona w całości
-     * po zamknięciu figury lub przy rozpoczęciu nowego wielokąta.
+     * Tymczasowe znaczniki wierzchołków podczas rysowania wielokąta.
+     * Są usuwane w całości po zamknięciu figury lub przy rozpoczęciu nowego wielokąta.
      */
     private List<Shape> tempMarkers = new ArrayList<>();
 
     /**
-     * Punkt wejścia aplikacji JavaFX - wywoływany przez framework po launch().
+     * Buduje główne okno: BorderPane z paskiem menu na górze i panelem rysowania w centrum.
+     * Pane jest domyślnie przezroczysty, więc białe tło ustawiamy ręcznie.
      *
-     * Buduje layout okna: {@link javafx.scene.layout.BorderPane} z paskiem
-     * menu na górze i panelem rysowania w centrum. Białe tło panelu jest
-     * ustawione ręcznie, bo domyślnie Pane jest przezroczysty.
-     *
-     * @param primaryStage Główne okno aplikacji, tworzone automatycznie przez
-     *                     framework JavaFX. Tu ustawiamy tytuł, scenę i robimy
-     *                     show().
+     * @param primaryStage główne okno tworzone przez framework JavaFX
      */
     @Override
     public void start(Stage primaryStage) {
         BorderPane root = new BorderPane();
 
         drawPane = new Pane();
-        // Pane domyślnie jest przezroczysty - jawnie ustawiamy białe tło,
-        // żeby obszar roboczy był wyraźnie widoczny
         drawPane.setBackground(new Background(new BackgroundFill(Color.WHITE, CornerRadii.EMPTY, Insets.EMPTY)));
 
-        // Konfigurujemy menu kontekstowe i obsługę myszy zanim cokolwiek
-        // pojawi się na ekranie - handlery muszą być gotowe od razu
         setupRightClickMenu();
         setupMouseInteractions();
 
@@ -144,44 +103,23 @@ public class GraphicEditor extends Application {
     }
 
     /**
-     * Buduje i zwraca pasek menu z trzema pozycjami: Plik, Rysowanie, Pomoc.
+     * Buduje i zwraca pasek menu z pozycjami: Plik, Rysowanie, Pomoc.
      *
-     * Referencja do {@code stage} jest tu potrzebna tylko po to, żeby przekazać
-     * ją do okien dialogowych wyboru pliku (FileChooser wymaga właściciela okna,
-     * żeby zachować prawidłową modalność).
-     *
-     * Struktura menu:
-     * 
      * <pre>
-     * Plik
-     *   Zapisz figury      -> saveShapesToFile()
-     *   Wczytaj figury     -> loadShapesFromFile()
-     *
-     * Rysowanie
-     *   Wybierz/Modyfikuj  -> currentTool = SELECT
-     *   ─────────────────
-     *   Okrąg              -> currentTool = CIRCLE
-     *   Prostokąt          -> currentTool = RECTANGLE
-     *   Wielokąt           -> currentTool = POLYGON
-     *
-     * Pomoc
-     *   Instrukcja użytkownika -> showManualDialog()
-     *   ─────────────────
-     *   [przycisk Info]        -> showInfoDialog()
+     * Plik:      Zapisz figury | Wczytaj figury
+     * Rysowanie: SELECT | Okrąg | Prostokąt | Wielokąt
+     * Pomoc:     Instrukcja użytkownika | [przycisk Info]
      * </pre>
      *
-     * Przycisk "Info" w menu Pomoc jest celowo dodany jako {@link CustomMenuItem}
-     * z setHideOnClick(false) - menu nie zamknie się po kliknięciu w przycisk,
-     * co jest bardziej przewidywalnym zachowaniem dla elementu osadzonego.
+     * Przycisk Info jest osadzony jako {@link CustomMenuItem} z setHideOnClick(false),
+     * żeby menu nie zamykało się po kliknięciu w przycisk.
      *
-     * @param stage Referencja do głównego okna, przekazywana dalej do
-     *              metod zapisu/odczytu pliku.
-     * @return Gotowy, skonfigurowany pasek menu.
+     * @param stage przekazywane dalej do FileChooser jako właściciel okna dialogowego
+     * @return gotowy, skonfigurowany pasek menu
      */
     private MenuBar createMenuBar(Stage stage) {
         MenuBar menuBar = new MenuBar();
 
-        // --- Menu "Plik" ---
         Menu fileMenu = new Menu("Plik");
         MenuItem saveItem = new MenuItem("Zapisz figury");
         saveItem.setOnAction(e -> saveShapesToFile(stage));
@@ -189,7 +127,6 @@ public class GraphicEditor extends Application {
         loadItem.setOnAction(e -> loadShapesFromFile(stage));
         fileMenu.getItems().addAll(saveItem, loadItem);
 
-        // --- Menu "Rysowanie" ---
         Menu drawMenu = new Menu("Rysowanie");
         MenuItem selectItem = new MenuItem("Wybierz/Modyfikuj (SELECT)");
         selectItem.setOnAction(e -> currentTool = Tool.SELECT);
@@ -201,16 +138,10 @@ public class GraphicEditor extends Application {
         polyItem.setOnAction(e -> currentTool = Tool.POLYGON);
         drawMenu.getItems().addAll(selectItem, new SeparatorMenuItem(), circleItem, rectItem, polyItem);
 
-        // --- Menu "Pomoc" ---
         Menu helpMenu = new Menu("Pomoc");
-        MenuItem infoItem = new MenuItem("Info");
-        infoItem.setOnAction(e -> showInfoDialog());
         MenuItem manualItem = new MenuItem("Instrukcja użytkownika");
         manualItem.setOnAction(e -> showManualDialog());
 
-        // Przycisk osadzony jako CustomMenuItem - kliknięcie nie zamknie menu
-        // (setHideOnClick(false)), bo chcemy żeby użytkownik mógł nacisnąć
-        // przycisk bez efektu ubocznego w postaci zamknięcia całego menu
         Button infoButton = new Button("Info");
         infoButton.setOnAction(e -> showInfoDialog());
         CustomMenuItem infoButtonItem = new CustomMenuItem(infoButton);
@@ -223,18 +154,10 @@ public class GraphicEditor extends Application {
     }
 
     /**
-     * Tworzy i konfiguruje menu kontekstowe wywoływane prawym klikiem myszy.
+     * Tworzy menu kontekstowe z {@link ColorPicker}em wywoływane prawym klikiem na figurze.
      *
-     * Menu zawiera wyłącznie {@link ColorPicker} osadzony jako
-     * {@link CustomMenuItem}.
-     * Parametr {@code false} w konstruktorze CustomMenuItem oznacza, że kliknięcie
-     * wewnątrz ColorPickera nie zamknie menu - użytkownik może swobodnie wybrać
-     * kolor bez niespodziewanego zamknięcia kontrolki.
-     *
-     * Kiedy użytkownik zatwierdzi wybrany kolor, handler od razu aplikuje go
-     * do {@link #activeShape}. Sprawdzenie {@code activeShape != null} jest
-     * konieczne, bo w teorii menu może być widoczne w chwili, gdy activeShape
-     * zostało już wyczyszczone innym zdarzeniem.
+     * false w konstruktorze CustomMenuItem – kliknięcie wewnątrz ColorPickera
+     * nie zamknie menu, żeby użytkownik mógł spokojnie wybrać kolor.
      */
     private void setupRightClickMenu() {
         contextMenu = new ContextMenu();
@@ -246,67 +169,49 @@ public class GraphicEditor extends Application {
             }
         });
 
-        // false = menu nie znika po kliknięciu wewnątrz ColorPickera
         CustomMenuItem colorItem = new CustomMenuItem(colorPicker, false);
         contextMenu.getItems().add(colorItem);
     }
 
     /**
-     * Rejestruje wszystkie handlery zdarzeń myszy na głównym panelu rysowania.
+     * Rejestruje handlery myszy na panelu rysowania.
      *
-     * Metoda konfiguruje trzy zdarzenia: onMousePressed, onMouseDragged,
-     * onMouseReleased. Logika rysowania wielokąta jest wyraźnie oddzielona
-     * od logiki okręgu i prostokąta, bo wielokąt buduje się kliknięciami
-     * (nie przeciąganiem), a jego zakończenie następuje przez zamknięcie
-     * pierwszego i ostatniego wierzchołka.
-     *
-     * <b>onMousePressed</b> - obsługuje:
      * <ul>
-     * <li>W trybie SELECT: kliknięcie na pusty obszar odznacza figurę</li>
-     * <li>W trybie POLYGON: dodaje kolejny wierzchołek lub zamyka wielokąt</li>
-     * <li>W trybach CIRCLE/RECTANGLE: zapamiętuje punkt startowy przeciągania</li>
+     * <li>onMousePressed – odznaczanie figury (SELECT), dodawanie wierzchołka
+     *     wielokąta lub zapamiętanie punktu startowego dla okręgu/prostokąta.</li>
+     * <li>onMouseDragged – aktualizacja rozmiaru okręgu lub prostokąta na bieżąco.</li>
+     * <li>onMouseReleased – finalizacja figury i powrót do SELECT.</li>
      * </ul>
      *
-     * <b>onMouseDragged</b> - aktualizuje rozmiar okręgu lub prostokąta na
-     * bieżąco, żeby użytkownik widział podgląd podczas przeciągania.
-     * Dla okręgu promień to połowa większego z wymiarów (width lub height),
-     * co sprawia że okrąg zawsze jest "kwadratowy" (równe promienie).
-     * Dla prostokąta recalkulujemy lewy górny narożnik przez Math.min, żeby
-     * poprawnie obsługiwać przeciąganie w lewo/górę od punktu startowego.
-     *
-     * <b>onMouseReleased</b> - finalizuje figurę: nadaje jej zachowania edycji
-     * ({@link #setupShapeBehaviors}), zaznacza ją i wraca do trybu SELECT.
+     * Wielokąt zamyka się przez kliknięcie w odległości &lt;15 px od pierwszego
+     * wierzchołka (wymagane co najmniej 3 wierzchołki).
+     * Promień okręgu to połowa większego z wymiarów prostokąta opisanego przez przeciągnięcie.
      */
     private void setupMouseInteractions() {
 
         drawPane.setOnMousePressed(e -> {
-            // W trybie SELECT kliknięcie na puste miejsce (tj. bezpośrednio na drawPane,
-            // nie na jakąś figurę) odznacza aktualnie aktywną figurę
             if (currentTool == Tool.SELECT) {
+                // Klik na pusty obszar panelu (nie na figurę) odznacza aktywną figurę
                 if (e.getTarget() == drawPane) {
                     clearActiveShape();
                 }
                 return;
             }
 
-            // Ignorujemy kliknięcia innymi przyciskami niż lewy (np. prawy otwiera menu)
             if (e.getButton() != MouseButton.PRIMARY)
                 return;
 
-            // ---- WIELOKĄT: rysowanie punkt po punkcie ----
             if (currentTool == Tool.POLYGON) {
 
                 if (previewShape == null || !(previewShape instanceof Polygon)) {
-                    // Pierwsze kliknięcie - inicjujemy nowy wielokąt i od razu
-                    // dodajemy go do drawPane (będzie aktualizowany w miejscu)
+                    // Pierwsze kliknięcie – tworzymy nowy wielokąt
                     previewShape = new Polygon();
                     previewShape.setFill(Color.LIGHTBLUE);
                     previewShape.setStroke(Color.BLACK);
                     drawPane.getChildren().add(previewShape);
 
-                    // Pierwszy wierzchołek oznaczamy okrągłym znacznikiem (r=5),
-                    // żeby był wyraźnie odróżnialny - użytkownik musi w niego
-                    // trafić, żeby zamknąć figurę (tolerancja 15px, patrz niżej)
+                    // Okrągły znacznik na pierwszym wierzchołku – odróżnia go od pozostałych,
+                    // bo to właśnie w niego trzeba trafić żeby zamknąć figurę
                     Circle firstMarker = new Circle(e.getX(), e.getY(), 5);
                     firstMarker.setFill(Color.BLACK);
 
@@ -314,35 +219,26 @@ public class GraphicEditor extends Application {
                     tempMarkers.add(firstMarker);
                     drawPane.getChildren().add(firstMarker);
 
-                    // Dodajemy współrzędne pierwszego wierzchołka do listy punktów polygonu
                     ((Polygon) previewShape).getPoints().addAll(e.getX(), e.getY());
 
                 } else {
-                    // Kolejne kliknięcia - sprawdzamy najpierw, czy użytkownik
-                    // próbuje zamknąć figurę (klik blisko pierwszego wierzchołka)
                     Polygon p = (Polygon) previewShape;
                     double firstX = p.getPoints().get(0);
                     double firstY = p.getPoints().get(1);
 
-                    // Warunek zamknięcia: co najmniej 3 wierzchołki (6 współrzędnych)
-                    // i odległość od pierwszego punktu < 15px (tolerancja na "celowanie")
                     if (p.getPoints().size() >= 6 && Math.hypot(e.getX() - firstX, e.getY() - firstY) < 15) {
-
-                        // Usuwamy tymczasowe znaczniki - figura jest już gotowa
+                        // Klik blisko pierwszego wierzchołka – zamykamy figurę
                         drawPane.getChildren().removeAll(tempMarkers);
                         tempMarkers.clear();
 
-                        // Rejestrujemy zachowania edycji i zaznaczamy figurę
                         setupShapeBehaviors(p);
                         makeActive(p);
 
-                        // Wracamy do trybu SELECT i czyścimy referencję
                         currentTool = Tool.SELECT;
                         previewShape = null;
 
                     } else {
-                        // Kliknięcie w nowe miejsce - dodajemy kolejny wierzchołek.
-                        // Pośrednie wierzchołki oznaczamy małym kwadratem (6x6 px)
+                        // Kolejny wierzchołek – mały kwadratowy znacznik
                         Rectangle normalMarker = new Rectangle(e.getX() - 3, e.getY() - 3, 6, 6);
                         normalMarker.setFill(Color.BLACK);
 
@@ -352,19 +248,15 @@ public class GraphicEditor extends Application {
                     }
                 }
 
-                // Wielokąt nie używa logiki przeciągania - kończymy tu obsługę
                 return;
             }
 
-            // ---- OKRĄG i PROSTOKĄT: rysowanie przeciąganiem ----
             startX = e.getX();
             startY = e.getY();
 
             if (currentTool == Tool.CIRCLE) {
-                // Tworzymy okrąg z promieniem 0 - urośnie podczas przeciągania
                 previewShape = new Circle(startX, startY, 0);
             } else if (currentTool == Tool.RECTANGLE) {
-                // Analogicznie - prostokąt o wymiarach 0x0
                 previewShape = new Rectangle(startX, startY, 0, 0);
             }
 
@@ -376,29 +268,21 @@ public class GraphicEditor extends Application {
         });
 
         drawPane.setOnMouseDragged(e -> {
-            // Wielokąt jest budowany kliknięciami - podczas przeciągania nic nie robimy.
-            // Null-check na previewShape chroni przed przeciągnięciem bez uprzedniego
-            // naciśnięcia (co w praktyce nie powinno się zdarzyć, ale lepiej zabezpieczyć)
             if (currentTool == Tool.SELECT || currentTool == Tool.POLYGON || previewShape == null)
                 return;
 
-            // Ograniczamy współrzędne do obszaru panelu (minimum 0),
-            // żeby figura nie "wychodziła" poza lewą lub górną krawędź
             double currentX = Math.max(0, e.getX());
             double currentY = Math.max(0, e.getY());
             double width = Math.abs(currentX - startX);
             double height = Math.abs(currentY - startY);
 
             if (previewShape instanceof Circle) {
-                // Dla okręgu bierzemy połowę większego wymiaru jako promień -
-                // dzięki temu okrąg mieści się w prostokącie opisanym przez przeciągnięcie
                 double radius = Math.max(width, height) / 2;
                 ((Circle) previewShape).setRadius(radius);
 
             } else if (previewShape instanceof Rectangle) {
                 Rectangle r = (Rectangle) previewShape;
-                // Math.min zapewnia, że lewy górny narożnik jest zawsze "mniejszy"
-                // niezależnie od tego, w którą stronę użytkownik przeciąga mysz
+                // Math.min żeby poprawnie obsługiwać przeciąganie w lewo lub górę
                 r.setX(Math.min(startX, currentX));
                 r.setY(Math.min(startY, currentY));
                 r.setWidth(width);
@@ -407,80 +291,44 @@ public class GraphicEditor extends Application {
         });
 
         drawPane.setOnMouseReleased(e -> {
-            // Wielokąt kończymy kliknięciem w pierwszy wierzchołek (obsługiwane
-            // w onMousePressed), więc tutaj go pomijamy. Sprawdzamy też null na
-            // previewShape na wypadek, gdyby mouseReleased odpalił się bez
-            // wcześniejszego mousePressed (np. okno straciło fokus podczas przeciągania)
             if (currentTool == Tool.SELECT || currentTool == Tool.POLYGON || previewShape == null)
                 return;
 
-            // Figura jest gotowa - rejestrujemy dla niej obsługę edycji
             setupShapeBehaviors(previewShape);
-
-            // Zaznaczamy nową figurę od razu - wygodniejsze niż szukanie jej potem
             makeActive(previewShape);
-
-            // Automatyczny powrót do SELECT po narysowaniu figury
             currentTool = Tool.SELECT;
-
             previewShape = null;
         });
     }
 
     /**
-     * Rejestruje na figurze cztery handlery umożliwiające jej edycję po
-     * narysowaniu:
-     * zaznaczanie, przesuwanie, zmianę koloru (prawy klik) oraz skalowanie/obrót.
+     * Podpina handlery edycji do figury: zaznaczanie, przeciąganie, menu koloru i scroll.
      *
-     * Metoda jest wywoływana raz dla każdej figury - bezpośrednio po jej
-     * narysowaniu
-     * oraz dla każdej figury wczytanej z pliku (wtedy figury nie mają jeszcze
-     * żadnych handlerów, bo zostały odtworzone z surowych danych).
+     * Offset kursora jest zapisywany przez setUserData() jako double[2], żeby figura
+     * nie "skakała" do kursora przy pierwszym ruchu podczas przeciągania.
      *
-     * <b>Szczegóły implementacji przesuwania:</b>
-     * Offset między pozycją kursora a lewym górnym narożnikiem figury jest
-     * zapisywany
-     * w {@code shape.setUserData()} jako tablica {@code double[2]}. Dzięki temu
-     * figura "trzyma się" kursora w tym samym punkcie przez cały czas przeciągania,
-     * a nie skacze do lewego górnego narożnika przy pierwszym ruchu.
+     * Scroll pionowy: skalowanie o ±10% na krok (min. 10% oryginalnego rozmiaru).
+     * Shift+Scroll lub deltaX != 0 (trackpad): obrót o ±10° na krok.
      *
-     * <b>Szczegóły implementacji scrollowania:</b>
-     * Kółko myszy generuje zdarzenia z deltaY (ruch pionowy) lub deltaX (poziomy).
-     * Na niektórych systemach Shift+Scroll zmienia deltaX zamiast deltaY - dlatego
-     * warunek obrotu sprawdza zarówno {@code isShiftDown()} jak i
-     * {@code deltaX != 0}.
-     * Skalowanie ma zabezpieczenie przed zbyt mocnym pomniejszeniem (scaleX > 0.1).
-     *
-     * @param shape Figura, do której podpinamy wszystkie handlery edycji.
+     * @param shape figura, do której podpinamy handlery
      */
     private void setupShapeBehaviors(Shape shape) {
 
-        // Kliknięcie na figurę w trybie SELECT: zaznaczamy ją i zapamiętujemy
-        // offset kursora relative do obecnej pozycji translacji figury
         shape.setOnMousePressed(e -> {
             if (currentTool != Tool.SELECT)
                 return;
 
             makeActive(shape);
 
-            // Offset = różnica między globalną pozycją kursora a aktualną translacją
-            // figury.
-            // Podczas przeciągania odjęcie tego offsetu od nowej pozycji kursora daje
-            // nową translację, przy której figura zachowuje się naturalnie
             shape.setUserData(new double[] {
                     e.getSceneX() - shape.getTranslateX(),
                     e.getSceneY() - shape.getTranslateY()
             });
 
-            // consume() zapobiega "przekazaniu" zdarzenia do drawPane, co mogłoby
-            // nieumyślnie wywołać handler panelu (np. odznaczenie figury)
+            // consume() żeby zdarzenie nie trafiło też do drawPane i nie odznaczył figury
             e.consume();
         });
 
-        // Przeciąganie przesuwa tylko aktywną figurę.
-        // Dodatkowy warunek "shape != activeShape" chroni przed przesunięciem figury,
-        // która właśnie traci focus (np. kiedy kliknięto na inną figurę, ale mysz
-        // nadal przesuwa się po poprzedniej)
         shape.setOnMouseDragged(e -> {
             if (currentTool != Tool.SELECT || shape != activeShape)
                 return;
@@ -491,9 +339,6 @@ public class GraphicEditor extends Application {
             e.consume();
         });
 
-        // Prawy klik otwiera menu kontekstowe z wyborem koloru.
-        // Przed pokazaniem menu ustawiamy w ColorPickerze aktualny kolor figury,
-        // żeby użytkownik widział punkt startowy, a nie ostatnio używany kolor
         shape.setOnContextMenuRequested(e -> {
             if (currentTool != Tool.SELECT)
                 return;
@@ -504,8 +349,6 @@ public class GraphicEditor extends Application {
             e.consume();
         });
 
-        // Kółko myszy: skalowanie (tylko scroll pionowy) lub obrót (Shift + scroll,
-        // albo scroll poziomy - np. na trackpadzie Shift+scroll generuje deltaX)
         shape.setOnScroll(e -> {
             if (currentTool != Tool.SELECT || shape != activeShape)
                 return;
@@ -513,25 +356,18 @@ public class GraphicEditor extends Application {
             double deltaY = e.getDeltaY();
             double deltaX = e.getDeltaX();
 
-            // Zdarzenia scroll z deltaX=0 i deltaY=0 się zdarzają (np. przy
-            // inercyjnym scrollowaniu na końcu ruchu) - ignorujemy je
             if (deltaY == 0 && deltaX == 0)
                 return;
 
             if (e.isShiftDown() || deltaX != 0) {
-                // Tryb obrotu: jeśli jest ruch poziomy (deltaX) używamy go,
-                // bo jest bardziej precyzyjny niż deltaY w trybie Shift+Scroll
+                // Na niektórych systemach Shift+Scroll generuje deltaX zamiast deltaY
                 double delta = (deltaX != 0) ? deltaX : deltaY;
-                double angleDelta = delta > 0 ? 10 : -10; // obrót o 10 stopni na krok
+                double angleDelta = delta > 0 ? 10 : -10;
                 shape.setRotate(shape.getRotate() + angleDelta);
 
             } else {
-                // Tryb skalowania: 1.1 = powiększ o 10%, 0.9 = pomniejsz o 10%
                 double scaleFactor = deltaY > 0 ? 1.1 : 0.9;
 
-                // Zabezpieczenie: nie pozwalamy na skalowanie poniżej 10% oryginalnego
-                // rozmiaru - przy mniejszych wartościach figura staje się praktycznie
-                // niewidoczna i trudna do odzyskania
                 if (shape.getScaleX() * scaleFactor > 0.1) {
                     shape.setScaleX(shape.getScaleX() * scaleFactor);
                     shape.setScaleY(shape.getScaleY() * scaleFactor);
@@ -543,17 +379,12 @@ public class GraphicEditor extends Application {
     }
 
     /**
-     * Zaznacza podaną figurę jako aktywną, nadając jej czerwony obryss o grubości
-     * 3px.
+     * Zaznacza figurę jako aktywną (czerwony obrys 3px).
+     * Poprzednio zaznaczona figura wraca do czarnego obrysu 1px.
      *
-     * Przed zaznaczeniem nowej figury wywołuje {@link #clearActiveShape()}, żeby
-     * poprzednia zaznaczona figura wróciła do normalnego wyglądu. Dzięki temu
-     * zawsze jest zaznaczona co najwyżej jedna figura.
-     *
-     * @param shape Figura, którą chcemy zaznaczyć.
+     * @param shape figura do zaznaczenia
      */
     private void makeActive(Shape shape) {
-        // Odznaczamy poprzednią figurę (jeśli jakaś była) przed zaznaczeniem nowej
         clearActiveShape();
         activeShape = shape;
         activeShape.setStrokeWidth(3);
@@ -561,12 +392,8 @@ public class GraphicEditor extends Application {
     }
 
     /**
-     * Odznacza aktualnie aktywną figurę, przywracając jej domyślny czarny obrys
-     * 1px.
-     *
-     * Dodatkowo zamyka menu kontekstowe, jeśli jest otwarte - żeby nie "wisiało"
-     * po odznaczeniu figury, której dotyczy.
-     * Jeśli żadna figura nie jest aktywna, metoda nie robi nic (null-check).
+     * Odznacza aktywną figurę (przywraca czarny obrys 1px) i zamyka menu kontekstowe.
+     * Jeśli żadna figura nie jest aktywna, nie robi nic.
      */
     private void clearActiveShape() {
         if (activeShape != null) {
@@ -574,32 +401,16 @@ public class GraphicEditor extends Application {
             activeShape.setStroke(Color.BLACK);
             activeShape = null;
         }
-        // Zamykamy menu kontekstowe niezależnie od tego, czy figura była aktywna
         contextMenu.hide();
     }
 
     /**
-     * Zapisuje wszystkie figury z panelu rysowania do wybranego przez użytkownika
-     * pliku.
+     * Zapisuje wszystkie figury z panelu do wybranego pliku (serializacja binarna).
      *
-     * Zapis odbywa się przez serializację binarną listy obiektów {@link ShapeData}.
-     * Klasy Shape z JavaFX nie są serializowalne, dlatego każda figura jest
-     * najpierw
-     * konwertowana do {@link ShapeData} - prostego, serializowalnego kontenera
-     * danych.
+     * Shape z JavaFX nie jest serializowalny – każda figura jest najpierw
+     * konwertowana do {@link ShapeData}. Anulowanie dialogu nie powoduje żadnej akcji.
      *
-     * Iterujemy po wszystkich węzłach drawPane i zapisujemy te, które są
-     * instancjami
-     * Shape. Celowo pomijamy inne węzły (np. gdyby kiedyś dodano etykiety lub inne
-     * elementy UI do drawPane). Dane zapisywane dla każdej figury:
-     * pozycja, rozmiar, translacja (przesunięcie po narysowaniu), skala, kąt obrotu
-     * oraz kolor wypełnienia w formacie hex.
-     *
-     * W przypadku anulowania przez użytkownika w dialogu (file == null) metoda
-     * kończy się bez żadnej akcji i bez komunikatu.
-     *
-     * @param stage Referencja do okna aplikacji, wymagana przez FileChooser jako
-     *              właściciel dialogu (zapewnia prawidłowe zachowanie modalne).
+     * @param stage właściciel okna FileChooser (wymagany przez API)
      */
     private void saveShapesToFile(Stage stage) {
         FileChooser fileChooser = new FileChooser();
@@ -625,24 +436,14 @@ public class GraphicEditor extends Application {
     }
 
     /**
-     * Wczytuje figury z pliku binarnego i odtwarza je na panelu rysowania.
+     * Wczytuje figury z pliku binarnego, zastępując całą zawartość panelu.
      *
-     * Przed wczytaniem czyścimy całą zawartość drawPane i odznaczamy aktywną
-     * figurę - wczytanie jest operacją zastępującą, nie addytywną.
-     * Każdy odczytany obiekt {@link ShapeData} jest zamieniany z powrotem na
-     * figurę JavaFX przez {@link ShapeData#createShape()}, a następnie
-     * podpinane są do niej handlery edycji przez {@link #setupShapeBehaviors}.
+     * Wczytane {@link ShapeData} są zamieniane z powrotem na figury JavaFX,
+     * a następnie rejestrowane są dla nich handlery przez {@link #setupShapeBehaviors}.
+     * Łapie {@code Exception} (nie tylko IOException), bo readObject() może rzucić
+     * też ClassNotFoundException gdy plik pochodzi z innej wersji programu.
      *
-     * Metoda łapie szerokie {@code Exception} (a nie tylko IOException), bo
-     * {@code ObjectInputStream.readObject()} może rzucić też ClassNotFoundException
-     * (np. gdy plik pochodzi z innej wersji aplikacji z inną strukturą ShapeData).
-     *
-     * Adnotacja {@code @SuppressWarnings("unchecked")} jest uzasadniona: wiemy,
-     * że zapisywaliśmy dokładnie {@code List<ShapeData>}, więc rzutowanie jest
-     * bezpieczne, ale kompilator nie ma możliwości tego zweryfikować przez type
-     * erasure.
-     *
-     * @param stage Referencja do okna aplikacji, wymagana przez FileChooser.
+     * @param stage właściciel okna FileChooser (wymagany przez API)
      */
     private void loadShapesFromFile(Stage stage) {
         FileChooser fileChooser = new FileChooser();
@@ -655,14 +456,11 @@ public class GraphicEditor extends Application {
                 @SuppressWarnings("unchecked")
                 List<ShapeData> dataList = (List<ShapeData>) ois.readObject();
 
-                // Czyścimy panel i stan edytora przed załadowaniem nowych figur
                 drawPane.getChildren().clear();
                 clearActiveShape();
 
                 for (ShapeData data : dataList) {
                     Shape shape = data.createShape();
-                    // Figury odtworzone z pliku nie mają handlerów - musimy je
-                    // zarejestrować ponownie, tak jak przy rysowaniu
                     setupShapeBehaviors(shape);
                     drawPane.getChildren().add(shape);
                 }
@@ -676,11 +474,10 @@ public class GraphicEditor extends Application {
     }
 
     /**
-     * Wyświetla okno dialogowe z podstawowymi informacjami o aplikacji.
+     * Wyświetla okno dialogowe z informacjami o programie.
      *
-     * Wywołanie {@code setMinHeight/Width(USE_PREF_SIZE)} jest konieczne,
-     * bo JavaFX domyślnie nie dostosowuje rozmiaru Alertu do długości tekstu -
-     * bez tego treść może zostać ucięta lub schowana za przyciskiem OK.
+     * setMinHeight/Width(USE_PREF_SIZE) jest konieczne, bo bez tego JavaFX
+     * może przyciąć długi tekst w oknie alertu.
      */
     private void showInfoDialog() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -690,8 +487,6 @@ public class GraphicEditor extends Application {
                 "Przeznaczenie: Rysowanie i edycja figur geometrycznych\n" +
                 "Autor: Serhii Onopriienko | 293539");
 
-        // Bez tych dwóch linii JavaFX może przyciąć długi tekst -
-        // USE_PREF_SIZE oznacza "dopasuj rozmiar do preferowanej wielkości zawartości"
         alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
         alert.getDialogPane().setMinWidth(Region.USE_PREF_SIZE);
 
@@ -701,9 +496,8 @@ public class GraphicEditor extends Application {
     /**
      * Wyświetla instrukcję obsługi programu w oknie dialogowym.
      *
-     * Tekst opisuje wszystkie dostępne operacje i skróty klawiszowe/myszkowe.
-     * Tak jak w {@link #showInfoDialog()}, wymuszamy dopasowanie rozmiaru okna
-     * do zawartości przez USE_PREF_SIZE.
+     * setMinHeight/Width(USE_PREF_SIZE) jest konieczne, bo bez tego JavaFX
+     * może przyciąć długi tekst w oknie alertu.
      */
     private void showManualDialog() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -711,8 +505,7 @@ public class GraphicEditor extends Application {
         alert.setHeaderText("Jak używać programu");
         alert.setContentText(
                 "1. RYSOWANIE: Wybierz figurę z menu 'Rysowanie'. Kliknij i przeciągnij myszą po białym polu.\n" +
-                        "2. AKTYWACJA: Wybierz narzędzie 'SELECT' i kliknij na figurę, by ją uaktywnić (czerwona ramka).\n"
-                        +
+                        "2. AKTYWACJA: Wybierz narzędzie 'SELECT' i kliknij na figurę, by ją uaktywnić (czerwona ramka).\n" +
                         "3. PRZESUWANIE: Przeciągnij aktywną figurę myszą.\n" +
                         "4. ZMIANA ROZMIARU: Użyj kółka myszy (scroll) na aktywnej figurze.\n" +
                         "5. OBRACANIE: Przytrzymaj klawisz SHIFT i użyj kółka myszy na aktywnej figurze.\n" +
@@ -726,28 +519,21 @@ public class GraphicEditor extends Application {
     }
 
     /**
-     * Wyświetla prosty alert informacyjny z podanym tytułem i treścią.
+     * Wyświetla prosty alert informacyjny – pomocnik do komunikatów o sukcesie i błędach.
      *
-     * Używana jako helper do komunikatów o sukcesie lub błędzie przy
-     * zapisie/odczycie
-     * pliku. setHeaderText(null) ukrywa środkową sekcję nagłówka, żeby dialog
-     * był kompaktowy - treść komunikatu jest wystarczająca.
-     *
-     * @param title   Tytuł okna dialogowego (pasek tytułu).
-     * @param content Treść wyświetlana w ciele dialogu.
+     * @param title   tytuł okna dialogowego
+     * @param content treść komunikatu
      */
     private void showAlert(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
-        alert.setHeaderText(null); // brak nagłówka - sama treść wystarczy
+        alert.setHeaderText(null);
         alert.setContentText(content);
         alert.showAndWait();
     }
 
     /**
-     * Standardowy punkt wejścia aplikacji Java.
-     * {@code launch(args)} inicjalizuje środowisko JavaFX i wywołuje
-     * {@link #start(Stage)}.
+     * Punkt wejścia aplikacji – wywołuje launch(), które inicjalizuje JavaFX i uruchamia start().
      */
     public static void main(String[] args) {
         launch(args);
@@ -755,64 +541,40 @@ public class GraphicEditor extends Application {
 }
 
 /**
- * Serializowalny kontener danych jednej figury geometrycznej.
+ * Serializowalny kontener danych figury JavaFX.
  *
- * Klasy z pakietu {@code javafx.scene.shape} nie implementują
- * {@link Serializable},
- * więc nie możemy ich bezpośrednio zapisać przez ObjectOutputStream. Klasa
- * ShapeData
- * jest "mostem" między światem JavaFX a serializacją binarną - przechowuje
- * tylko
- * prymitywne typy danych i Stringi, które bez problemu można zapisać do pliku.
+ * Shape z javafx.scene.shape nie implementuje Serializable, więc każda figura
+ * jest "fotografowana" do tej klasy przed zapisem i odtwarzana przy odczycie.
+ * Przechowuje: typ, geometrię, translację, skalę, obrót i kolor (jako hex string).
  *
- * Przechowywane informacje dla każdej figury:
- * <ul>
- * <li>{@code type} - identyfikator typu figury: "CIRCLE", "RECTANGLE",
- * "POLYGON"</li>
- * <li>{@code x, y} - pozycja bazowa (środek okręgu / lewy górny róg
- * prostokąta)</li>
- * <li>{@code width, height} - wymiary prostokąta</li>
- * <li>{@code radius} - promień okręgu</li>
- * <li>{@code points} - lista współrzędnych wierzchołków wielokąta
- * (x0,y0,x1,y1,...)</li>
- * <li>{@code translateX/Y} - przesunięcie figury po narysowaniu (drag)</li>
- * <li>{@code scaleX/Y} - skala (zmiana rozmiaru przez scroll)</li>
- * <li>{@code rotate} - kąt obrotu w stopniach</li>
- * <li>{@code hexColor} - kolor wypełnienia w postaci stringa hex (np.
- * "0x4169e1ff")</li>
- * </ul>
- *
- * {@code serialVersionUID} jest ustawiony ręcznie, żeby zapis z jednej wersji
- * programu dało się odczytać w drugiej, o ile struktura klasy się nie zmieniła.
+ * serialVersionUID jest ustawiony ręcznie dla kompatybilności między wersjami programu.
  */
 class ShapeData implements Serializable {
 
-    /** Stała wersji serializacji - zmień ją, jeśli zmienisz strukturę tej klasy. */
+    /** Stała wersji serializacji – zmień jeśli zmienisz strukturę tej klasy. */
     private static final long serialVersionUID = 1L;
 
-    /** Typ figury jako String: "CIRCLE", "RECTANGLE" lub "POLYGON". */
+    /** Typ figury: "CIRCLE", "RECTANGLE" lub "POLYGON". */
     private String type;
 
-    /**
-     * Współrzędna X pozycji bazowej (środek okręgu lub lewy górny róg prostokąta).
-     */
+    /** Współrzędna X pozycji bazowej (środek okręgu lub lewy górny róg prostokąta). */
     private double x;
 
     /** Współrzędna Y pozycji bazowej. */
     private double y;
 
-    /** Szerokość prostokąta. Dla pozostałych typów nieużywane (wartość 0). */
+    /** Szerokość prostokąta. Dla pozostałych typów nieużywane. */
     private double width;
 
-    /** Wysokość prostokąta. Dla pozostałych typów nieużywane (wartość 0). */
+    /** Wysokość prostokąta. Dla pozostałych typów nieużywane. */
     private double height;
 
-    /** Promień okręgu. Dla pozostałych typów nieużywane (wartość 0). */
+    /** Promień okręgu. Dla pozostałych typów nieużywane. */
     private double radius;
 
     /**
-     * Lista współrzędnych wierzchołków wielokąta w formacie [x0, y0, x1, y1, ...].
-     * Dla okręgu i prostokąta to pole jest null.
+     * Lista wierzchołków wielokąta w formacie [x0, y0, x1, y1, ...].
+     * null dla okręgu i prostokąta.
      */
     private List<Double> points;
 
@@ -822,47 +584,35 @@ class ShapeData implements Serializable {
     /** Pionowe przesunięcie figury (wynik operacji drag). */
     private double translateY;
 
-    /** Współczynnik skalowania w osi X. Domyślnie 1.0 (brak skalowania). */
+    /** Skala w osi X (1.0 = bez zmiany). */
     private double scaleX;
 
-    /** Współczynnik skalowania w osi Y. Domyślnie 1.0 (brak skalowania). */
+    /** Skala w osi Y (1.0 = bez zmiany). */
     private double scaleY;
 
-    /** Kąt obrotu figury w stopniach. Domyślnie 0. */
+    /** Kąt obrotu w stopniach. */
     private double rotate;
 
     /**
-     * Kolor wypełnienia figury jako String w formacie zwracanym przez JavaFX
-     * (np. "0x4169e1ff"). Używamy Stringa zamiast Color, bo Color nie jest
-     * serializowalny. Przy odczycie zamieniamy go z powrotem przez Color.web().
+     * Kolor wypełnienia jako hex string w formacie JavaFX ("0xrrggbbaa").
+     * Color nie jest serializowalny, stąd zapis jako String.
      */
     private String hexColor;
 
     /**
-     * Konstruktor - "sfotografowuje" stan figury JavaFX i zapisuje go w polach tej
-     * klasy.
+     * Zapisuje stan figury JavaFX w polach tej klasy.
      *
-     * Wszystkie właściwości transformacji (translate, scale, rotate) są wspólne dla
-     * każdego typu figury, więc odczytujemy je zawsze. Geometria (pozycja, rozmiar)
-     * zależy od typu i jest odczytywana przez instanceof + rzutowanie.
-     *
-     * @param shape Figura JavaFX do zapisania. Musi być instancją Circle, Rectangle
-     *              lub Polygon - inne typy są milcząco ignorowane (type pozostanie
-     *              null).
+     * @param shape figura do zapisania – musi być Circle, Rectangle lub Polygon;
+     *              inne typy są ignorowane (type pozostaje null)
      */
     public ShapeData(Shape shape) {
-        // Transformacje są wspólne dla każdego typu figury
         this.translateX = shape.getTranslateX();
         this.translateY = shape.getTranslateY();
         this.scaleX = shape.getScaleX();
         this.scaleY = shape.getScaleY();
         this.rotate = shape.getRotate();
-
-        // Color.toString() zwraca hex w formacie "0xrrggbbaa" - wystarczy do
-        // odtworzenia
         this.hexColor = shape.getFill().toString();
 
-        // Geometria zależy od konkretnego typu figury
         if (shape instanceof Circle) {
             this.type = "CIRCLE";
             Circle c = (Circle) shape;
@@ -881,26 +631,19 @@ class ShapeData implements Serializable {
         } else if (shape instanceof Polygon) {
             this.type = "POLYGON";
             Polygon p = (Polygon) shape;
-            // Robimy kopię listy punktów - oryginał należy do figury JavaFX
-            // i może się zmieniać, nie chcemy żeby ShapeData współdzieliło referencję
+            // Kopia listy – nie chcemy trzymać referencji do wewnętrznej listy JavaFX
             this.points = new ArrayList<>(p.getPoints());
         }
     }
 
     /**
-     * Odtwarza i zwraca figurę JavaFX na podstawie danych zapisanych w tej
-     * instancji.
+     * Odtwarza figurę JavaFX z zapisanych danych.
      *
-     * Po stworzeniu figury (przez odpowiedni konstruktor zależny od {@link #type})
-     * aplikujemy wszystkie zapisane transformacje. Obrys jest zawsze ustawiany na
-     * czarny z grubością 1 - niezależnie od tego, czy figura była aktywna w chwili
-     * zapisu (nie chcemy wczytywać figur z czerwonym obrysem 3px).
+     * Figura startuje zawsze z czarnym obrysem 1px – nie chcemy wczytywać figur
+     * z czerwoną ramką zaznaczenia. Color.web() parsuje format "0xrrggbbaa".
      *
-     * {@code Color.web(hexColor)} parsuje string hex z powrotem do obiektu Color.
-     * Działa poprawnie z formatem "0xrrggbbaa" generowanym przez JavaFX.
-     *
-     * @return Odtworzona figura JavaFX gotowa do dodania do drawPane,
-     *         lub {@code null} jeśli {@link #type} ma nierozpoznaną wartość.
+     * @return odtworzona figura gotowa do dodania do drawPane,
+     *         lub {@code null} jeśli {@link #type} ma nieznany typ
      */
     public Shape createShape() {
         Shape shape = null;
@@ -918,17 +661,12 @@ class ShapeData implements Serializable {
         }
 
         if (shape != null) {
-            // Przywracamy wszystkie transformacje
             shape.setTranslateX(translateX);
             shape.setTranslateY(translateY);
             shape.setScaleX(scaleX);
             shape.setScaleY(scaleY);
             shape.setRotate(rotate);
-
-            // Kolor wypełnienia z hex stringa
             shape.setFill(Color.web(hexColor));
-
-            // Zawsze zaczynamy od neutralnego wyglądu obrysu - grubość 1, kolor czarny
             shape.setStroke(Color.BLACK);
             shape.setStrokeWidth(1);
         }
