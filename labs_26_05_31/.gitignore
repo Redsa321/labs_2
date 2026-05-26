@@ -1,0 +1,20 @@
+# Skompilowane pliki Java
+*.class
+
+# Dokumentacja (generowana automatycznie)
+docs/
+doxygen-docs/
+
+# Pliki IDE
+.idea/
+*.iml
+.vscode/
+*.project
+*.classpath
+.settings/
+
+# System
+.DS_Store
+Thumbs.db
+
+.claude
