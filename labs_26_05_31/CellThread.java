@@ -8,8 +8,8 @@ import javax.swing.SwingUtilities;
  * Każde pole planszy jest osobnym wątkiem działającym w nieskończonej pętli.
  * Co losowy czas z przedziału {@code [0.5k, 1.5k]} ms wątek:
  * <ul>
- * <li>z prawdopodobieństwem {@code p} — zmienia kolor na losowy,</li>
- * <li>z prawdopodobieństwem {@code 1-p} — ustawia kolor jako średnią RGB
+ * <li>z prawdopodobieństwem {@code p} - zmienia kolor na losowy,</li>
+ * <li>z prawdopodobieństwem {@code 1-p} - ustawia kolor jako średnią RGB
  * czterech aktywnych sąsiadów (plansza jako torus 2D).</li>
  * </ul>
  *
@@ -27,10 +27,9 @@ import javax.swing.SwingUtilities;
  * przez sąsiadów przy obliczaniu średniej.
  *
  * @author Serhii Onopriienko
- * @version 1.0
  * @see SimulationPanel
  */
-public class CellThread extends Thread {
+public final class CellThread extends Thread {
 
     /** Numer wątku wypisywany w komunikatach Start/End. */
     private final int index;
@@ -48,7 +47,7 @@ public class CellThread extends Thread {
      */
     private volatile Color color;
 
-    /** Referencja do panelu — dostęp do globalLock, siatki komórek i parametrów. */
+    /** Referencja do panelu - dostęp do globalLock, siatki komórek i parametrów. */
     private final SimulationPanel panel;
 
     /**
@@ -98,7 +97,7 @@ public class CellThread extends Thread {
      * Schemat jednej iteracji:
      * <ol>
      * <li>Losowy uśpienie {@code [0.5k, 1.5k]} ms.</li>
-     * <li>Jeśli wątek jest zawieszony — {@code wait()} aż do wznowienia.</li>
+     * <li>Jeśli wątek jest zawieszony - {@code wait()} aż do wznowienia.</li>
      * <li>Wejście w sekcję krytyczną ({@code globalLock}):
      * <ul>
      * <li>wypisanie {@code "Start: index"},</li>
@@ -123,7 +122,6 @@ public class CellThread extends Thread {
                 break;
             }
 
-            // Czekamy jeśli wątek jest zawieszony
             synchronized (suspendLock) {
                 while (suspended && running) {
                     try {
@@ -139,7 +137,6 @@ public class CellThread extends Thread {
             if (!running)
                 break;
 
-            // Sekcja krytyczna: jeden wątek naraz, gwarantuje nieprzeplecione Start/End
             synchronized (panel.globalLock) {
                 System.out.println("Start: " + index);
 
@@ -164,7 +161,7 @@ public class CellThread extends Thread {
      * czterej sąsiedzi są zawieszeni, metoda zwraca aktualny kolor bez zmiany.
      *
      * <p>
-     * Wywoływana wyłącznie pod {@code globalLock} — kolory sąsiadów nie mogą
+     * Wywoływana wyłącznie pod {@code globalLock} - kolory sąsiadów nie mogą
      * się zmienić w trakcie odczytu.
      *
      * @return uśredniony kolor sąsiadów lub bieżący kolor, gdy brak aktywnych

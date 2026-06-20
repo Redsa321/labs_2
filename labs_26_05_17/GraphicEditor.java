@@ -22,7 +22,8 @@ import java.util.List;
  * i wczytać przy kolejnym uruchomieniu.
  *
  * Klasa rozszerza {@link Application} zgodnie z wymogiem JavaFX.
- * Punkt wejścia to {@link #start(Stage)}, a nie main() – ta tylko wywołuje launch().
+ * Punkt wejścia to {@link #start(Stage)}, a nie main() – ta tylko wywołuje
+ * launch().
  *
  * @author Serhii Onopriienko
  * @version 1.0
@@ -40,7 +41,10 @@ public class GraphicEditor extends Application {
         CIRCLE,
         /** Rysowanie prostokąta przez przeciągnięcie myszy. */
         RECTANGLE,
-        /** Rysowanie wielokąta kliknięciami; zamknięcie przez klik blisko pierwszego wierzchołka. */
+        /**
+         * Rysowanie wielokąta kliknięciami; zamknięcie przez klik blisko pierwszego
+         * wierzchołka.
+         */
         POLYGON,
         /** Zaznaczanie i edycja istniejących figur. */
         SELECT
@@ -61,7 +65,10 @@ public class GraphicEditor extends Application {
     /** Punkt startowy przeciągania przy rysowaniu okręgu lub prostokąta. */
     private double startX, startY;
 
-    /** Figura w trakcie rysowania, dodana do panelu zanim użytkownik puści przycisk myszy. */
+    /**
+     * Figura w trakcie rysowania, dodana do panelu zanim użytkownik puści przycisk
+     * myszy.
+     */
     private Shape previewShape;
 
     /** Menu kontekstowe z ColorPickerem, wywoływane prawym klikiem na figurze. */
@@ -72,12 +79,14 @@ public class GraphicEditor extends Application {
 
     /**
      * Tymczasowe znaczniki wierzchołków podczas rysowania wielokąta.
-     * Są usuwane w całości po zamknięciu figury lub przy rozpoczęciu nowego wielokąta.
+     * Są usuwane w całości po zamknięciu figury lub przy rozpoczęciu nowego
+     * wielokąta.
      */
     private List<Shape> tempMarkers = new ArrayList<>();
 
     /**
-     * Buduje główne okno: BorderPane z paskiem menu na górze i panelem rysowania w centrum.
+     * Buduje główne okno: BorderPane z paskiem menu na górze i panelem rysowania w
+     * centrum.
      * Pane jest domyślnie przezroczysty, więc białe tło ustawiamy ręcznie.
      *
      * @param primaryStage główne okno tworzone przez framework JavaFX
@@ -111,10 +120,12 @@ public class GraphicEditor extends Application {
      * Pomoc:     Instrukcja użytkownika | [przycisk Info]
      * </pre>
      *
-     * Przycisk Info jest osadzony jako {@link CustomMenuItem} z setHideOnClick(false),
+     * Przycisk Info jest osadzony jako {@link CustomMenuItem} z
+     * setHideOnClick(false),
      * żeby menu nie zamykało się po kliknięciu w przycisk.
      *
-     * @param stage przekazywane dalej do FileChooser jako właściciel okna dialogowego
+     * @param stage przekazywane dalej do FileChooser jako właściciel okna
+     *              dialogowego
      * @return gotowy, skonfigurowany pasek menu
      */
     private MenuBar createMenuBar(Stage stage) {
@@ -134,7 +145,7 @@ public class GraphicEditor extends Application {
         circleItem.setOnAction(e -> currentTool = Tool.CIRCLE);
         MenuItem rectItem = new MenuItem("Prostokąt");
         rectItem.setOnAction(e -> currentTool = Tool.RECTANGLE);
-        MenuItem polyItem = new MenuItem("Wielokąt (Trójkąt)");
+        MenuItem polyItem = new MenuItem("Wielokąt");
         polyItem.setOnAction(e -> currentTool = Tool.POLYGON);
         drawMenu.getItems().addAll(selectItem, new SeparatorMenuItem(), circleItem, rectItem, polyItem);
 
@@ -154,7 +165,8 @@ public class GraphicEditor extends Application {
     }
 
     /**
-     * Tworzy menu kontekstowe z {@link ColorPicker}em wywoływane prawym klikiem na figurze.
+     * Tworzy menu kontekstowe z {@link ColorPicker}em wywoływane prawym klikiem na
+     * figurze.
      *
      * false w konstruktorze CustomMenuItem – kliknięcie wewnątrz ColorPickera
      * nie zamknie menu, żeby użytkownik mógł spokojnie wybrać kolor.
@@ -178,14 +190,16 @@ public class GraphicEditor extends Application {
      *
      * <ul>
      * <li>onMousePressed – odznaczanie figury (SELECT), dodawanie wierzchołka
-     *     wielokąta lub zapamiętanie punktu startowego dla okręgu/prostokąta.</li>
-     * <li>onMouseDragged – aktualizacja rozmiaru okręgu lub prostokąta na bieżąco.</li>
+     * wielokąta lub zapamiętanie punktu startowego dla okręgu/prostokąta.</li>
+     * <li>onMouseDragged – aktualizacja rozmiaru okręgu lub prostokąta na
+     * bieżąco.</li>
      * <li>onMouseReleased – finalizacja figury i powrót do SELECT.</li>
      * </ul>
      *
      * Wielokąt zamyka się przez kliknięcie w odległości &lt;15 px od pierwszego
      * wierzchołka (wymagane co najmniej 3 wierzchołki).
-     * Promień okręgu to połowa większego z wymiarów prostokąta opisanego przez przeciągnięcie.
+     * Promień okręgu to połowa większego z wymiarów prostokąta opisanego przez
+     * przeciągnięcie.
      */
     private void setupMouseInteractions() {
 
@@ -302,9 +316,11 @@ public class GraphicEditor extends Application {
     }
 
     /**
-     * Podpina handlery edycji do figury: zaznaczanie, przeciąganie, menu koloru i scroll.
+     * Podpina handlery edycji do figury: zaznaczanie, przeciąganie, menu koloru i
+     * scroll.
      *
-     * Offset kursora jest zapisywany przez setUserData() jako double[2], żeby figura
+     * Offset kursora jest zapisywany przez setUserData() jako double[2], żeby
+     * figura
      * nie "skakała" do kursora przy pierwszym ruchu podczas przeciągania.
      *
      * Scroll pionowy: skalowanie o ±10% na krok (min. 10% oryginalnego rozmiaru).
@@ -392,7 +408,8 @@ public class GraphicEditor extends Application {
     }
 
     /**
-     * Odznacza aktywną figurę (przywraca czarny obrys 1px) i zamyka menu kontekstowe.
+     * Odznacza aktywną figurę (przywraca czarny obrys 1px) i zamyka menu
+     * kontekstowe.
      * Jeśli żadna figura nie jest aktywna, nie robi nic.
      */
     private void clearActiveShape() {
@@ -408,7 +425,8 @@ public class GraphicEditor extends Application {
      * Zapisuje wszystkie figury z panelu do wybranego pliku (serializacja binarna).
      *
      * Shape z JavaFX nie jest serializowalny – każda figura jest najpierw
-     * konwertowana do {@link ShapeData}. Anulowanie dialogu nie powoduje żadnej akcji.
+     * konwertowana do {@link ShapeData}. Anulowanie dialogu nie powoduje żadnej
+     * akcji.
      *
      * @param stage właściciel okna FileChooser (wymagany przez API)
      */
@@ -439,7 +457,8 @@ public class GraphicEditor extends Application {
      * Wczytuje figury z pliku binarnego, zastępując całą zawartość panelu.
      *
      * Wczytane {@link ShapeData} są zamieniane z powrotem na figury JavaFX,
-     * a następnie rejestrowane są dla nich handlery przez {@link #setupShapeBehaviors}.
+     * a następnie rejestrowane są dla nich handlery przez
+     * {@link #setupShapeBehaviors}.
      * Łapie {@code Exception} (nie tylko IOException), bo readObject() może rzucić
      * też ClassNotFoundException gdy plik pochodzi z innej wersji programu.
      *
@@ -505,7 +524,8 @@ public class GraphicEditor extends Application {
         alert.setHeaderText("Jak używać programu");
         alert.setContentText(
                 "1. RYSOWANIE: Wybierz figurę z menu 'Rysowanie'. Kliknij i przeciągnij myszą po białym polu.\n" +
-                        "2. AKTYWACJA: Wybierz narzędzie 'SELECT' i kliknij na figurę, by ją uaktywnić (czerwona ramka).\n" +
+                        "2. AKTYWACJA: Wybierz narzędzie 'SELECT' i kliknij na figurę, by ją uaktywnić (czerwona ramka).\n"
+                        +
                         "3. PRZESUWANIE: Przeciągnij aktywną figurę myszą.\n" +
                         "4. ZMIANA ROZMIARU: Użyj kółka myszy (scroll) na aktywnej figurze.\n" +
                         "5. OBRACANIE: Przytrzymaj klawisz SHIFT i użyj kółka myszy na aktywnej figurze.\n" +
@@ -519,7 +539,8 @@ public class GraphicEditor extends Application {
     }
 
     /**
-     * Wyświetla prosty alert informacyjny – pomocnik do komunikatów o sukcesie i błędach.
+     * Wyświetla prosty alert informacyjny – pomocnik do komunikatów o sukcesie i
+     * błędach.
      *
      * @param title   tytuł okna dialogowego
      * @param content treść komunikatu
@@ -533,7 +554,8 @@ public class GraphicEditor extends Application {
     }
 
     /**
-     * Punkt wejścia aplikacji – wywołuje launch(), które inicjalizuje JavaFX i uruchamia start().
+     * Punkt wejścia aplikacji – wywołuje launch(), które inicjalizuje JavaFX i
+     * uruchamia start().
      */
     public static void main(String[] args) {
         launch(args);
@@ -545,9 +567,11 @@ public class GraphicEditor extends Application {
  *
  * Shape z javafx.scene.shape nie implementuje Serializable, więc każda figura
  * jest "fotografowana" do tej klasy przed zapisem i odtwarzana przy odczycie.
- * Przechowuje: typ, geometrię, translację, skalę, obrót i kolor (jako hex string).
+ * Przechowuje: typ, geometrię, translację, skalę, obrót i kolor (jako hex
+ * string).
  *
- * serialVersionUID jest ustawiony ręcznie dla kompatybilności między wersjami programu.
+ * serialVersionUID jest ustawiony ręcznie dla kompatybilności między wersjami
+ * programu.
  */
 class ShapeData implements Serializable {
 
@@ -557,7 +581,9 @@ class ShapeData implements Serializable {
     /** Typ figury: "CIRCLE", "RECTANGLE" lub "POLYGON". */
     private String type;
 
-    /** Współrzędna X pozycji bazowej (środek okręgu lub lewy górny róg prostokąta). */
+    /**
+     * Współrzędna X pozycji bazowej (środek okręgu lub lewy górny róg prostokąta).
+     */
     private double x;
 
     /** Współrzędna Y pozycji bazowej. */

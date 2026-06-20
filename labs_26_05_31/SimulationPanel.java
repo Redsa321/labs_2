@@ -12,7 +12,7 @@ import javax.swing.*;
  * <ul>
  * <li>inicjalizację i uruchamianie wątków ({@link #initGrid()}),</li>
  * <li>renderowanie siatki ({@link #paintComponent(Graphics)}),</li>
- * <li>obsługę kliknięć myszą — zawieszanie/wznawianie wątków,</li>
+ * <li>obsługę kliknięć myszą - zawieszanie/wznawianie wątków,</li>
  * <li>dynamiczne dodawanie wiersza ({@link #addRow()}) lub kolumny
  * ({@link #addColumn()}) wraz z nowymi wątkami,</li>
  * <li>zatrzymanie wszystkich wątków ({@link #stopAll()}).</li>
@@ -33,7 +33,8 @@ import javax.swing.*;
  * @see CellThread
  * @see ColorSimulation
  */
-public class SimulationPanel extends JPanel implements MouseListener {
+@SuppressWarnings("serial")
+public final class SimulationPanel extends JPanel implements MouseListener {
 
     /**
      * Jeden wspólny generator liczb pseudolosowych dla całej aplikacji.
@@ -102,7 +103,7 @@ public class SimulationPanel extends JPanel implements MouseListener {
      *
      * <p>
      * Każda komórka otrzymuje unikalny numer (pole {@code nextIndex}) rosnący
-     * monotonicznie przez cały czas życia panelu — również przy dodawaniu nowych
+     * monotonicznie przez cały czas życia panelu - również przy dodawaniu nowych
      * wierszy/kolumn.
      */
     private void initGrid() {
@@ -129,7 +130,7 @@ public class SimulationPanel extends JPanel implements MouseListener {
      * półprzezroczystym nakładką i symbolem {@code ■} na środku.
      *
      * <p>
-     * Metoda wywoływana na EDT — nie wymaga synchronizacji z wątkami komórek,
+     * Metoda wywoływana na EDT - nie wymaga synchronizacji z wątkami komórek,
      * ponieważ pole {@code color} w {@link CellThread} jest {@code volatile}.
      *
      * @param g kontekst graficzny Swing
@@ -191,22 +192,22 @@ public class SimulationPanel extends JPanel implements MouseListener {
         }
     }
 
-    /** Nieużywane zdarzenie myszy — wymagane przez {@link MouseListener}. */
+    /** Nieużywane zdarzenie myszy - wymagane przez {@link MouseListener}. */
     @Override
     public void mousePressed(MouseEvent e) {
     }
 
-    /** Nieużywane zdarzenie myszy — wymagane przez {@link MouseListener}. */
+    /** Nieużywane zdarzenie myszy - wymagane przez {@link MouseListener}. */
     @Override
     public void mouseReleased(MouseEvent e) {
     }
 
-    /** Nieużywane zdarzenie myszy — wymagane przez {@link MouseListener}. */
+    /** Nieużywane zdarzenie myszy - wymagane przez {@link MouseListener}. */
     @Override
     public void mouseEntered(MouseEvent e) {
     }
 
-    /** Nieużywane zdarzenie myszy — wymagane przez {@link MouseListener}. */
+    /** Nieużywane zdarzenie myszy - wymagane przez {@link MouseListener}. */
     @Override
     public void mouseExited(MouseEvent e) {
     }
@@ -244,7 +245,7 @@ public class SimulationPanel extends JPanel implements MouseListener {
      * Dynamicznie dodaje nową kolumnę z aktywnymi wątkami do działającej symulacji.
      *
      * <p>
-     * Operacja wykonywana jest pod {@link #globalLock} — analogicznie do
+     * Operacja wykonywana jest pod {@link #globalLock} - analogicznie do
      * {@link #addRow()}. Nowe komórki otrzymują losowe kolory i są natychmiast
      * uruchamiane.
      */
